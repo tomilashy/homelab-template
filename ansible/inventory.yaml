@@ -1,0 +1,12 @@
+all:
+  children:
+    k8s_cluster:
+      children:
+        masters:
+          hosts:
+            192.168.1.108: {}
+        workers:
+          hosts:
+            192.168.1.110: {}
+            192.168.1.111: {}
+    ungrouped: {}

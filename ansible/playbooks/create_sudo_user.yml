@@ -1,0 +1,59 @@
+# Help from https://stackoverflow.com/a/37334415
+# https://docs.ansible.com/ansible/latest/collections/ansible/posix/authorized_key_module.html
+---
+- name: Configure users for cluster
+  hosts: k8s_cluster
+  become: yes
+  vars:
+      add_sudo:
+  roles:
+    - users
+
+  tasks:
+    - name: Include users vars
+      include_vars: "{{ playbook_dir }}/roles/users/defaults/main.yml"
+    
+    - name: Make sure we have a 'wheel' group
+      group:
+        name: wheel
+        state: present
+    
+    - name: Allow 'wheel' group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: visudo -cf %s
+    
+    - name: Add sudoers users to wheel group
+      # debug: msg="Hello, {{ item.username }}!"
+      user:
+        name: "{{ item.username }}"
+        groups: wheel
+        append: yes
+      loop: "{{ users }}"
+      when: (item.no_priviledge == false)
+
+    - name: Set up authorized keys for the deployer user
+      # debug: msg="user='{{item.0.username}}' key='{{item.1}}'"
+      authorized_key: 
+        user: "{{item.0.username}}" 
+        key: "{{item.1}}"
+      with_nested:
+        - "{{users}}"
+        - "{{lookup('file', '~/.ssh/id_rsa.pub' )}}"
+      when: (item.0.no_priviledge == false)
+      tags:
+        - never
+        - add_current_machine
+
+    - name: Set SSH Public Keys From GitHub
+      authorized_key:
+        user: "{{item.username}}"
+        state: present
+        key: "https://github.com/tomilashy.keys"
+        exclusive: yes
+      loop: "{{ users }}"
+      when: (item.no_priviledge == false)
+    

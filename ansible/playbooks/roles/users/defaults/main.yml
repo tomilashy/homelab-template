@@ -1,0 +1,9 @@
+---
+users:
+  - username: johnd
+    state: absent
+    no_priviledge: true
+
+  - username: ansible_user
+    state: present
+    no_priviledge: false

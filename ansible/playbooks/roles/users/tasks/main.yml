@@ -1,0 +1,20 @@
+- name: Print a message
+  ansible.builtin.debug:
+    msg: "Running user roles"
+
+- name: Manage user accounts
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: "{{ item.state }}"
+  loop: "{{ users }}"
+  when: (item.no_priviledge)
+
+
+- name: Manage sudo user accounts
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: "{{ item.state }}"
+  loop: "{{ users }}"
+  when: (item.no_priviledge == false and add_sudo is defined)
+
+# - name: Manage a message
