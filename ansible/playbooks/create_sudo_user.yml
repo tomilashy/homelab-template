@@ -30,7 +30,7 @@
       # debug: msg="Hello, {{ item.username }}!"
       user:
         name: "{{ item.username }}"
-        groups: wheel
+        groups: wheel,microk8s
         append: yes
       loop: "{{ users }}"
       when: (item.no_priviledge == false)
