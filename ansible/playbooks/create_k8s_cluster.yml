@@ -1,64 +1,131 @@
 # help from https://buildvirtual.net/deploy-a-kubernetes-cluster-using-ansible/
+# https://www.theurbanpenguin.com/an-ansible-microk8s-install-of-kubernetes/
+# https://github.com/istvano/ansible_role_microk8s
+# https://github.com/fabianlee/microk8s-nginx-istio
+# https://www.reddit.com/r/ansible/comments/a8yhcj/passing_vars_across_plays/
+# https://www.reddit.com/r/ansible/comments/sn9l9d/microk8s_join_cluster_with_ansible/
+---
+- name: setup Microk8s
+  hosts: k8s_cluster
+  become: yes
+  # become_user: ansible_user
+  # vars:
+  #     install:
+  tasks:
+    - name: Install docker
+      apt:
+        name: docker.io
+        update_cache: true
+        cache_valid_time: 86400
+        state: present
+      when: (install is defined)
 
-- hosts: masters
+    - name: Install microk8s
+      snap:
+        name: microk8s
+        state: present
+        classic: yes
+      when: (install is defined)
+       
+
+    - name: Which user
+      debug: msg="Hello, {{ lookup("env", "USER") }}!"
+
+    - name: Add user to Docker and Microk8s groups, they will need to logout and in again
+      user:
+        name: '{{ lookup("env", "USER") }}'
+        state: present
+        groups:
+          - docker
+          - microk8s
+        append: true
+
+    - name: Add alias to kubectl
+      become: false
+      lineinfile:
+        path: '{{ lookup("env", "HOME") }}/.bashrc'
+        regexp: '^alias kubectl='
+        line: 'alias kubectl="microk8s kubectl"'
+        state: present
+
+    - name: Add bash completion for kubectl
+      become: false
+      lineinfile:
+        path: '{{ lookup("env", "HOME") }}/.bashrc'
+        regexp: '^source \<\(kubectl'
+        line: 'source <(kubectl completion bash)'
+        state: present
+
+
+- name: Master setup
+  hosts: master_main
   become: yes
   tasks:
-    - name: initialize the cluster
-      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
-      args:
-        chdir: $HOME
-        creates: cluster_initialized.txt
+    - name: Gather facts from k8s_cluster
+      ansible.builtin.setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['k8s_cluster'] }}"
 
     - name: create .kube directory
-      become: yes
-      become_user: kube
       file:
         path: $HOME/.kube
         state: directory
         mode: 0755
 
-    - name: copies admin.conf to user's kube config
-      copy:
-        src: /etc/kubernetes/admin.conf
-        dest: /home/kube/.kube/config
-        remote_src: yes
-        owner: kube
+    - name: Create join key
+      shell: microk8s add-node
+      register: join_cluster
 
-    - name: install Pod network
-      become: yes
-      become_user: kube
-      shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml 
-      args:
-        chdir: $HOME
-        
-    - name: Get the token for joining the worker nodes
-      become: yes
-      become_user: kube
-      shell: kubeadm token create  --print-join-command
-      register: kubernetes_join_command
+    - name: Create persistent var
+      set_fact:
+        join_master: "{{ join_cluster.stdout_lines[1] }}"
+        join_worker: "{{ join_cluster.stdout_lines[4] }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['k8s_cluster'] }}"
 
-    - debug:
-      msg: "{{ kubernetes_join_command.stdout }}"
+    - name: Print join worker command
+      ansible.builtin.debug:
+        var: join_worker
 
-    - name: Copy join command to local file.
-      become: yes
-      local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest="/tmp/kubernetes_join_command" mode=0777
+    - name: Print join master command
+      ansible.builtin.debug:
+        var: join_master
+    
+    - name: Enumerate all cluster HA hosts within the hosts file
+      ansible.builtin.blockinfile:
+        dest: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED: microk8s HA Cluster Hosts"
+        content: |
+          {% for host in groups["masters"] %}
+          {{ hostvars[host].ansible_default_ipv4.address }} {{ hostvars[host].ansible_hostname }}
+          {% endfor %}
 
+    - name: Enumerate all cluster worker hosts within the hosts file
+      ansible.builtin.blockinfile:
+        dest: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED: microk8s WORKER Cluster Hosts"
+        content: |
+          {% for host in groups["workers"] %}
+          {{ hostvars[host].ansible_default_ipv4.address }} {{ hostvars[host].ansible_hostname }}
+          {% endfor %}
+# hostvars[inventory_hostname]
 
----
-- hosts: workers
+- name: Worker setup
+  hosts: workers
   become: yes
-  gather_facts: yes
-
+  tags:
+    - workers
   tasks:
-   - name: Copy join command from Ansiblehost to the worker nodes.
-     become: yes
-     copy:
-       src: /tmp/kubernetes_join_command
-       dest: /tmp/kubernetes_join_command
-       mode: 0777
+    - name: Print join key worker
+      debug:
+        msg: |
+          {{join_master}}
+          {{join_worker}}
+        # var: hostvars["master_main"]
+        # var: join_worker
 
-   - name: Join the Worker nodes to the cluster.
-     become: yes
-     command: sh /tmp/kubernetes_join_command
-     register: joined_or_not
+    - name: Join cluster
+      shell: "{{join_worker}}"
+      

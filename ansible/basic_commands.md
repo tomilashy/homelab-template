@@ -27,3 +27,4 @@ ansible-playbook --limit imac-2.local user.yml
 ansible-playbook -i inventory.ini --limit mcp-dev-202 -u jolasubu master.yml
 ansible-playbook master.yml -k SSHpassword
 ansible-playbook master.yml -K  sudo password
+ ansible all --list-hosts

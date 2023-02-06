@@ -4,7 +4,8 @@ all:
       children:
         masters:
           hosts:
-            192.168.1.108: {}
+            master_main:
+              ansible_host: 192.168.1.108
         workers:
           hosts:
             192.168.1.110: {}

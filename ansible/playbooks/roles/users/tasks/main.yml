@@ -1,6 +1,6 @@
 - name: Print a message
   ansible.builtin.debug:
-    msg: "Running user roles"
+    msg: "Running user roles as {{ansible_user_id }}"
 
 - name: Manage user accounts
   ansible.builtin.user:

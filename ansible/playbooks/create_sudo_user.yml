@@ -1,9 +1,10 @@
 # Help from https://stackoverflow.com/a/37334415
 # https://docs.ansible.com/ansible/latest/collections/ansible/posix/authorized_key_module.html
 ---
-- name: Configure users for cluster
-  hosts: k8s_cluster
+- name: Configure users machine
+  hosts: all
   become: yes
+  # become_user: ansible_user
   vars:
       add_sudo:
   roles:
