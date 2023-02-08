@@ -1,0 +1,44 @@
+# https://bobcares.com/blog/docker-cloudflare-ddns/
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ddns-cloudflare-secret
+  namespace: pihole
+data:
+  ZONE: <domain-base64-ecoded>
+  SUBDOMAIN: <subdomain-base64-ecoded>
+  API_KEY: <cloudflare-token-base64-ecoded>
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cloudflare-ddns
+  namespace: pihole
+  name: cloudflare-ddns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-ddns
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: cloudflare-ddns
+    spec:
+      containers:
+      - name: cloudflare-ddns
+        image: oznu/cloudflare-ddns:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PROXIED
+          value: "false"
+        - name: CRON
+          value: "*/20 * * * *"
+        envFrom:
+        - secretRef:
+            name: ddns-cloudflare-secret
+      restartPolicy: Always
