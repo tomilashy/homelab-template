@@ -1,0 +1,32 @@
+# https://www.reddit.com/r/selfhosted/comments/sgf63u/authentik_on_k3s_on_raspberry_pi_4/
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: authentik-postgresql
+  namespace: authentik
+spec:
+  storageClassName: authentik-postgresql
+  persistentVolumeReclaimPolicy: Retain
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/authentik/posgresql
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: authentik-redis
+  namespace: authentik
+spec:
+  storageClassName: authentik-redis
+  persistentVolumeReclaimPolicy: Retain
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/authentik/redis
