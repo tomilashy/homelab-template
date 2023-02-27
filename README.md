@@ -3,6 +3,8 @@
 So I've set up my home lab using Harvester HCI and I've some set of images. 
 I will try to automate some of the steps I take using ansible or terraform(if needed) for future use
 
+![image](https://user-images.githubusercontent.com/33330651/218753313-260ea505-1224-4746-927f-5922ac2d8139.png)
+<!-- https://cloud.smartdraw.com/editor.aspx?templateId=aab5d49c-57b2-4cf4-bb77-bf83ea54a750&flags=128#depoId=42463694&credID=-45091731 -->
 
 ## Images
 - [TrueNAS](https://download.truenas.com/TrueNAS-SCALE-Bluefin/22.12.0/TrueNAS-SCALE-22.12.0.iso)

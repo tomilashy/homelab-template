@@ -1,0 +1,41 @@
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+  annotations: 
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.local.domain.com`)
+      kind: Rule
+      middlewares:
+        - name: traefik-dashboard-basicauth
+          namespace: traefik
+      services:
+        - name: api@internal
+          kind: TraefikService
+  # tls:
+    # secretName: local-web-com-staging-tls
+    # secretName: local-web-com-prod-tls
+
+
+# Alternative but traefik must be set as default
+
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: traefik-dashboard
+# spec:
+#   rules:
+#     - host: "traefik.local.domain.com"
+#       http:
+#         paths:
+#           - path: "/"
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: api@internal

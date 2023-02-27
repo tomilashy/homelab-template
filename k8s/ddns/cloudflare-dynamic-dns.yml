@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ddns-cloudflare-secret
-  namespace: pihole
+  namespace: ddns
 data:
   ZONE: <domain-base64-ecoded>
   SUBDOMAIN: <subdomain-base64-ecoded>
@@ -16,7 +16,7 @@ kind: Deployment
 metadata:
   labels:
     app: cloudflare-ddns
-  namespace: pihole
+  namespace: ddns
   name: cloudflare-ddns
 spec:
   replicas: 1

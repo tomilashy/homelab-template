@@ -36,10 +36,18 @@
         name: '{{ lookup("env", "USER") }}'
         state: present
         groups:
-          - docker
+          # - docker
           - microk8s
         append: true
 
+    - name: Add alias to helm3
+      become: false
+      lineinfile:
+        path: '{{ lookup("env", "HOME") }}/.bashrc'
+        regexp: '^alias helm='
+        line: 'alias helm="microk8s helm"'
+        state: present
+        
     - name: Add alias to kubectl
       become: false
       lineinfile:
@@ -47,6 +55,14 @@
         regexp: '^alias kubectl='
         line: 'alias kubectl="microk8s kubectl"'
         state: present
+        
+    # - name: Add alias to kubectl all namespace
+    #   become: false
+    #   lineinfile:
+    #     path: '{{ lookup("env", "HOME") }}/.bashrc'
+    #     regexp: '^alias k='
+    #     line: 'alias k="microk8s kubectl -A"'
+    #     state: present
 
     - name: Add bash completion for kubectl
       become: false

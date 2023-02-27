@@ -5,9 +5,9 @@ all:
         masters:
           hosts:
             master_main:
-              ansible_host: 192.168.1.108
+              ansible_host: 192.168.1.119
         workers:
           hosts:
-            192.168.1.110: {}
-            192.168.1.111: {}
+            192.168.1.117: {}
+            192.168.1.118: {}
     ungrouped: {}
